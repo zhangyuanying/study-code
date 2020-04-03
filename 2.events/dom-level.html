@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div>
+    <button  id="button">测试</button>
+    <button  id="button0" >dom0测试</button>
+  </div>
+</body>
+</html>
+<script>
+  let btn = document.getElementById('button')
+  let btn0 = document.getElementById('button0')
+  // function handleClick(){
+  //   console.log('this',this)
+  // }
+  // function handleClick1(){
+  //   console.log('this1',this)
+  // }
+  // btn.addEventListener('click',handleClick)
+  // btn.addEventListener('click',handleClick1)
+  function handleDom0(event){
+    console.log('dom0',this,'event',event)
+  }
+  window.onclick = handleDom0
+
+  let eventListen = {
+    addEvent:function(ele,type,fn,option){
+      if(window.addEventListener){
+        ele.addEventListener(type,fn,option)
+      }else if(window.attachEvent){
+        ele.attachEvent('on'+type,fn)
+      }else{
+        ele['on'+type] = fn
+      }
+    },
+    removeEvent:function(ele,type,fn,option){
+      if(window.removeEventListener){
+        ele.removeEventListener(type,fn,option)
+      }else if(window.detachEvent){
+        ele.detachEvent('on'+type,fn)
+      }else{
+        ele['on'+type] = null
+      }
+    }
+  }
+</script>
+<!-- dom级别：
+  DOM1，DOM2，DOM3
+
+
+-->

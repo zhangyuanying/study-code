@@ -1,3 +1,4 @@
+// promise.all是Promise类上的静态方法
 // 定义promise的三个状态：pending fulfilled rejected
 const PENDING = "PENDING"; // 等待
 const FULFILLED = "FULFILLED"; // 成功
@@ -59,6 +60,9 @@ class Promise {
     this.onResolvedCallbacks = []; // 存放成功的回调,发布订阅模式
     this.onRejectedCallbacks = []; // 存放失败的回调
     let resolve = value => {
+      if (value instanceof Promise) {
+        return value.then(resolve, reject);
+      }
       if (this.status === PENDING) {
         this.status = FULFILLED;
         this.value = value;
@@ -82,7 +86,12 @@ class Promise {
   then(onFulfilled, onRejected) {
     // 可选参数的处理，需要判断onFulfilled和onRejected的类型：如果不是函数，就封装成函数val=>val
     onFulfilled = typeof onFulfilled === "function" ? onFulfilled : val => val;
-    onRejected =typeof onRejected === "function"? onRejected: err => {  throw err;};
+    onRejected =
+      typeof onRejected === "function"
+        ? onRejected
+        : err => {
+            throw err;
+          };
     let promise2 = new Promise((resolve, reject) => {
       if (this.status === FULFILLED) {
         // 为了可以取到promise2，需要放在异步队列中
@@ -98,7 +107,7 @@ class Promise {
       if (this.status === REJECTED) {
         setTimeout(() => {
           try {
-            let x = onRejected(this.value);
+            let x = onRejected(this.reason);
             resolvePromise(promise2, x, resolve, reject);
           } catch (e) {
             reject(e);
@@ -119,7 +128,7 @@ class Promise {
         this.onRejectedCallbacks.push(() => {
           setTimeout(() => {
             try {
-              let x = onRejected(this.value);
+              let x = onRejected(this.reason);
               resolvePromise(promise2, x, resolve, reject);
             } catch (e) {
               reject(e);
@@ -130,7 +139,49 @@ class Promise {
     });
     return promise2;
   }
+  // catch实际上就是.then(null,rejection)或者.then(undefined,rejection)的别名
+  catch(errCallback) {
+    return this.then(null, errCallback);
+  }
 }
+
+const isPromise = value => {
+  if (
+    (typeof value === "object" && value !== null) ||
+    typeof value === "function"
+  ) {
+    return typeof value.then === "function";
+  }
+  return false;
+};
+
+Promise.all = function(promises) {
+  return new Promise((resolve, reject) => {
+    let arr = [];
+    let index = 0;
+    let processData = (i, data) => {
+      arr[i] = data;
+      if (++index === promises.length) {
+        resolve(arr);
+      }
+    };
+    for (let i = 0; i < promises.length; i++) {
+      let current = promises[i];
+      if (isPromise(current)) {
+        current.then(
+          data => {
+            processData(i,data);
+          },
+          err => {
+            return reject(err);
+          }
+        );
+      } else {
+        processData(i,current);
+      }
+    }
+  });
+};
 
 Promise.deferred = function() {
   let dfd = {};
